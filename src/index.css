@@ -3130,6 +3130,15 @@ select:focus-visible,
   background: var(--baby-pink-deep);
   color: #fff;
 }
+.theme-switch .theme-vibe-btn {
+  border-left: 1px solid var(--border-soft);
+  background: var(--baby-pink-soft);
+  color: var(--dark-text);
+  font-weight: 800;
+}
+.theme-switch .theme-vibe-btn:hover {
+  background: var(--baby-pink);
+}
 .mobile-theme-switch { display: flex; justify-content: center; padding: 8px 0; }
 @media (max-width: 1100px) {
   .nav-cta-wrap .theme-switch { display: none; }

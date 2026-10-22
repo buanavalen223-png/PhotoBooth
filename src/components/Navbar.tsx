@@ -10,6 +10,7 @@ interface NavbarProps {
   galleryCount: number;
   themeId: ThemeId;
   onChangeTheme: (id: ThemeId) => void;
+  onOpenThemeGate?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -18,6 +19,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   galleryCount,
   themeId,
   onChangeTheme,
+  onOpenThemeGate,
 }) => {
   const themeSwitch = (
     <div className="theme-switch" role="group" aria-label="Booth style">
@@ -36,6 +38,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         );
       })}
+      {onOpenThemeGate && (
+        <button
+          type="button"
+          className="theme-vibe-btn"
+          title="Open Vibe Selector"
+          onClick={onOpenThemeGate}
+        >
+          <span>✨ Vibe</span>
+        </button>
+      )}
     </div>
   );
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

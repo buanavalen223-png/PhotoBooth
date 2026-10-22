@@ -18,7 +18,8 @@ export const App: React.FC = () => {
   const [storedTheme] = useState<ThemeId | null>(() => loadStoredTheme());
   const [themeId, setThemeId] = useState<ThemeId>(storedTheme ?? 'slay');
   const [selectedFrameId, setSelectedFrameId] = useState<string>(THEMES[themeId].defaultFrameId);
-  const [showWelcome, setShowWelcome] = useState<boolean>(storedTheme === null);
+  // Selalu tampilkan pilihan tema setiap kali web diakses
+  const [showWelcome, setShowWelcome] = useState<boolean>(true);
 
   const changeTheme = useCallback((id: ThemeId) => {
     setThemeId(id);
@@ -63,6 +64,7 @@ export const App: React.FC = () => {
           galleryCount={galleryCount}
           themeId={themeId}
           onChangeTheme={changeTheme}
+          onOpenThemeGate={() => setShowWelcome(true)}
         />
 
         <main className="main-content" id="main-content">
@@ -112,7 +114,7 @@ export const App: React.FC = () => {
       </div>
       {showWelcome && (
         <WelcomeGate
-          currentTheme={storedTheme ? themeId : null}
+          currentTheme={themeId}
           onChoose={(id) => {
             changeTheme(id);
             setShowWelcome(false);
