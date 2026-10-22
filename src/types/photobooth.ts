@@ -109,7 +109,28 @@ export type FilterId =
   | 'bright'
   | 'contrast'
   | 'film'
-  | 'dreamy-pastel';
+  | 'dreamy-pastel'
+  // Slay theme filters
+  | 'slay-dreamy'
+  | 'slay-rosy'
+  | 'slay-film-diary'
+  | 'slay-cloud-nine'
+  | 'slay-vintage-sweet'
+  | 'slay-glitter-pop'
+  // Guy theme filters
+  | 'guy-cinematic'
+  | 'guy-cold-steel'
+  | 'guy-night-drive'
+  | 'guy-action-comic'
+  | 'guy-vintage-flight'
+  | 'guy-street-chrome'
+  // Straight theme filters
+  | 'straight-natural'
+  | 'straight-classic-film'
+  | 'straight-warm-portrait'
+  | 'straight-cool-editorial'
+  | 'straight-monochrome'
+  | 'straight-soft-focus';
 
 // ==========================================
 // LIVE AR CAMERA FILTERS & MULTI-EFFECT TYPES
@@ -277,6 +298,8 @@ export interface CapturedPhoto {
   height: number;
   appliedEffects?: string[];
   appliedColorTone?: CameraColorToneId;
+  backgroundMode?: 'original' | 'blur' | 'replace';
+  backgroundId?: string;
 }
 
 export type StickerType =

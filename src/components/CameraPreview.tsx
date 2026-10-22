@@ -13,6 +13,8 @@ import {
   smoothFaceMetricsList,
 } from '../utils/arFilters';
 import { faceTrackerService, FaceTrackerStatus } from '../utils/faceTracker';
+import { backgroundSegmenterService } from '../utils/backgroundSegmenter';
+import { BackgroundMode } from '../utils/backgroundLibrary';
 import {
   Camera,
   CameraOff,
@@ -45,6 +47,9 @@ interface CameraPreviewProps {
   litePerformanceMode: boolean;
   onTrackerStatusChange: (status: FaceTrackerStatus, error: string | null) => void;
   onDetectedFaceCountChange: (count: number) => void;
+  backgroundMode?: BackgroundMode;
+  backgroundId?: string;
+  compositeCanvasRef?: React.RefObject<HTMLCanvasElement>;
 }
 
 export const CameraPreview: React.FC<CameraPreviewProps> = ({
@@ -67,6 +72,9 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
   litePerformanceMode,
   onTrackerStatusChange,
   onDetectedFaceCountChange,
+  backgroundMode = 'original',
+  backgroundId = 'color-white',
+  compositeCanvasRef,
 }) => {
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -170,11 +178,39 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
 
       const video = videoRef.current;
       const overlay = arOverlayCanvasRef.current;
+      const compositeCanvas = compositeCanvasRef?.current;
 
       if (video && overlay && video.readyState >= 2 && video.videoWidth > 0) {
         if (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight) {
           overlay.width = video.videoWidth;
           overlay.height = video.videoHeight;
+        }
+
+        // Real-time Background Segmentation & Composition
+        if (backgroundMode !== 'original' && compositeCanvas) {
+          if (
+            compositeCanvas.width !== video.videoWidth ||
+            compositeCanvas.height !== video.videoHeight
+          ) {
+            compositeCanvas.width = video.videoWidth;
+            compositeCanvas.height = video.videoHeight;
+          }
+
+          backgroundSegmenterService.updateSegmentation(video, nowMs);
+
+          const cCtx = compositeCanvas.getContext('2d');
+          if (cCtx) {
+            cCtx.clearRect(0, 0, compositeCanvas.width, compositeCanvas.height);
+            backgroundSegmenterService.composite(
+              cCtx,
+              video,
+              backgroundMode,
+              backgroundId,
+              compositeCanvas.width,
+              compositeCanvas.height,
+              mirrorPreview
+            );
+          }
         }
 
         const ctx = overlay.getContext('2d');
@@ -236,8 +272,12 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
   }, [
     activeARFilters,
     arOverlayCanvasRef,
+    backgroundId,
+    backgroundMode,
+    compositeCanvasRef,
     isCameraActive,
     litePerformanceMode,
+    mirrorPreview,
     onDetectedFaceCountChange,
     smoothedFacesRef,
     videoRef,
@@ -496,11 +536,23 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
             filter: toneDef.cssFilter !== 'none' ? toneDef.cssFilter : undefined,
           }}
           className={`camera-video-el ${mirrorPreview ? 'mirrored' : ''} ${
-            isCameraActive ? 'visible' : 'hidden'
+            isCameraActive && backgroundMode === 'original' ? 'visible' : 'hidden'
           }`}
           playsInline
           muted
           autoPlay
+        />
+
+        {/* REAL-TIME COMPOSITED BACKGROUND REPLACEMENT CANVAS */}
+        <canvas
+          ref={compositeCanvasRef}
+          style={{
+            filter: toneDef.cssFilter !== 'none' ? toneDef.cssFilter : undefined,
+          }}
+          className={`camera-composite-canvas ${
+            isCameraActive && backgroundMode !== 'original' ? 'visible' : 'hidden'
+          }`}
+          aria-hidden="true"
         />
 
         {/* LIVE COLOR TINT OVERLAY */}

@@ -28,6 +28,9 @@ import { generateCuteDemoPhotos } from '../utils/demoPhotos';
 import { soundEngine } from '../utils/sound';
 import { CameraPreview } from './CameraPreview';
 import { ARFilterPanel } from './ARFilterPanel';
+import { BackgroundSelector } from './BackgroundSelector';
+import { BackgroundMode } from '../utils/backgroundLibrary';
+import { backgroundSegmenterService } from '../utils/backgroundSegmenter';
 import { FrameGallery } from './FrameGallery';
 import { PhotoEditor } from './PhotoEditor';
 import { ExportPanel } from './ExportPanel';
@@ -49,6 +52,7 @@ import {
   XCircle,
   ArrowRight,
   ArrowLeft,
+  Layers,
 } from 'lucide-react';
 
 interface PhotoboothStudioProps {
@@ -72,9 +76,19 @@ export const PhotoboothStudio: React.FC<PhotoboothStudioProps> = ({
   const smoothedFacesRef = useRef<SmoothedFaceMetrics[]>([]);
   const liveCanvasRef = useRef<HTMLCanvasElement>(null);
   const slotReplaceInputRef = useRef<HTMLInputElement>(null);
+  const compositeCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // Studio Step Indicator: 1 = Capture & Live AR, 2 = Frame & Layout, 3 = Edit & Export
   const [studioStep, setStudioStep] = useState<1 | 2 | 3>(1);
+
+  // Background Segmentation & Replacement state
+  const [backgroundMode, setBackgroundMode] = useState<BackgroundMode>('original');
+  const [selectedBackgroundId, setSelectedBackgroundId] = useState<string>(
+    themeId === 'guy' ? 'scene-comic-action' : themeId === 'straight' ? 'scene-studio-spotlight' : 'color-pastel-pink'
+  );
+  const [isSegmenterReady, setIsSegmenterReady] = useState<boolean>(false);
+  const [isSegmenterLoading, setIsSegmenterLoading] = useState<boolean>(false);
+  const [step1CreativeTab, setStep1CreativeTab] = useState<'background' | 'ar-filters'>('background');
 
   // Camera & Session state
   const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
@@ -155,6 +169,26 @@ export const PhotoboothStudio: React.FC<PhotoboothStudioProps> = ({
       };
     });
   }, [themeId]);
+
+  // Initialize MediaPipe Background Segmenter when user selects blur or replace mode
+  useEffect(() => {
+    if (backgroundMode !== 'original' && !backgroundSegmenterService.hasMask()) {
+      setIsSegmenterLoading(true);
+      backgroundSegmenterService.initialize().then((ready) => {
+        setIsSegmenterLoading(false);
+        setIsSegmenterReady(ready);
+        if (!ready) {
+          showToast(
+            'warning',
+            'AI Model Loading',
+            'Background segmentation is preparing in the browser...'
+          );
+        }
+      });
+    } else if (backgroundSegmenterService.hasMask()) {
+      setIsSegmenterReady(true);
+    }
+  }, [backgroundMode, showToast]);
 
   const currentLayout = getLayoutById(editorState.customization.layoutId);
   const requiredPhotoCount: PhotoCountMode = currentLayout.photoCount;
@@ -323,21 +357,38 @@ export const PhotoboothStudio: React.FC<PhotoboothStudioProps> = ({
 
     const toneDef = getCameraColorTone(activeColorTone);
 
-    ctx.save();
-    if (mirrorPreview) {
-      ctx.translate(vw, 0);
-      ctx.scale(-1, 1);
+    // 1. Draw camera frame or real-time composited background replacement
+    if (backgroundMode !== 'original') {
+      backgroundSegmenterService.composite(
+        ctx,
+        video,
+        backgroundMode,
+        selectedBackgroundId,
+        vw,
+        vh,
+        mirrorPreview
+      );
+    } else {
+      ctx.save();
+      if (mirrorPreview) {
+        ctx.translate(vw, 0);
+        ctx.scale(-1, 1);
+      }
+      if (toneDef.cssFilter && toneDef.cssFilter !== 'none') {
+        ctx.filter = toneDef.cssFilter;
+      }
+      ctx.drawImage(video, 0, 0, vw, vh);
+      ctx.filter = 'none';
+      ctx.restore();
     }
-
-    // 1. Draw camera frame with active live color filter
-    if (toneDef.cssFilter && toneDef.cssFilter !== 'none') {
-      ctx.filter = toneDef.cssFilter;
-    }
-    ctx.drawImage(video, 0, 0, vw, vh);
-    ctx.filter = 'none';
 
     // 2. Draw AR Face Filter overlays in the exact same coordinate space (mirrored together with video)
     if (activeARFilters.length > 0) {
+      ctx.save();
+      if (mirrorPreview) {
+        ctx.translate(vw, 0);
+        ctx.scale(-1, 1);
+      }
       renderActiveARFilters(
         ctx,
         vw,
@@ -346,8 +397,8 @@ export const PhotoboothStudio: React.FC<PhotoboothStudioProps> = ({
         activeARFilters,
         performance.now()
       );
+      ctx.restore();
     }
-    ctx.restore();
 
     // 3. Apply live color tone pastel tint if active
     if (toneDef.tintColor && toneDef.tintAlpha > 0) {
@@ -366,8 +417,16 @@ export const PhotoboothStudio: React.FC<PhotoboothStudioProps> = ({
       height: vh,
       appliedEffects: [...activeARFilters],
       appliedColorTone: activeColorTone,
+      backgroundMode,
+      backgroundId: selectedBackgroundId,
     };
-  }, [activeARFilters, activeColorTone, mirrorPreview]);
+  }, [
+    activeARFilters,
+    activeColorTone,
+    backgroundMode,
+    mirrorPreview,
+    selectedBackgroundId,
+  ]);
 
   const waitMsAbortable = (ms: number): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -853,10 +912,13 @@ export const PhotoboothStudio: React.FC<PhotoboothStudioProps> = ({
                 </div>
               </div>
 
-              {/* LIVE CAMERA VIEWPORT WITH REAL-TIME AR OVERLAY */}
+              {/* LIVE CAMERA VIEWPORT WITH REAL-TIME AR OVERLAY & BACKGROUND REPLACEMENT */}
               <CameraPreview
                 videoRef={videoRef}
                 arOverlayCanvasRef={arOverlayCanvasRef}
+                compositeCanvasRef={compositeCanvasRef}
+                backgroundMode={backgroundMode}
+                backgroundId={selectedBackgroundId}
                 smoothedFacesRef={smoothedFacesRef}
                 isCameraActive={isCameraActive}
                 onCameraStateChange={setIsCameraActive}
@@ -924,22 +986,68 @@ export const PhotoboothStudio: React.FC<PhotoboothStudioProps> = ({
                 )}
               </div>
 
-              {/* LIVE AR FACE FILTERS & CAMERA COLOR TONES CATALOG PANEL */}
-              <ARFilterPanel
-                activeFilters={activeARFilters}
-                onToggleFilter={handleToggleARFilter}
-                onClearAllFilters={() => setActiveARFilters([])}
-                favoriteFilterIds={favoriteARFilters}
-                onToggleFavorite={handleToggleFavoriteAR}
-                activeColorTone={activeColorTone}
-                onSelectColorTone={setActiveColorTone}
-                trackerStatus={trackerStatus}
-                trackerError={trackerError}
-                detectedFaceCount={detectedFaceCount}
-                onRetryTracker={handleRetryTracker}
-                litePerformanceMode={litePerformanceMode}
-                onToggleLiteMode={() => setLitePerformanceMode((v) => !v)}
-              />
+              {/* CREATIVE CONTROLS: BACKGROUND REPLACEMENT & AR FACE FILTERS */}
+              <div className="step1-creative-section">
+                <div className="step1-creative-tabs" role="tablist" aria-label="Creative controls">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={step1CreativeTab === 'background'}
+                    className={`step1-tab-btn ${step1CreativeTab === 'background' ? 'active' : ''}`}
+                    onClick={() => setStep1CreativeTab('background')}
+                  >
+                    <Layers size={16} />
+                    <span>
+                      Background AI{' '}
+                      {backgroundMode === 'original'
+                        ? '(Off)'
+                        : backgroundMode === 'blur'
+                        ? '(Blur)'
+                        : '(Replace)'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={step1CreativeTab === 'ar-filters'}
+                    className={`step1-tab-btn ${step1CreativeTab === 'ar-filters' ? 'active' : ''}`}
+                    onClick={() => setStep1CreativeTab('ar-filters')}
+                  >
+                    <Sparkles size={16} />
+                    <span>Face AR Accessories ({activeARFilters.length})</span>
+                  </button>
+                </div>
+
+                {step1CreativeTab === 'background' ? (
+                  <BackgroundSelector
+                    themeId={themeId}
+                    mode={backgroundMode}
+                    selectedBackgroundId={selectedBackgroundId}
+                    isSegmenterReady={isSegmenterReady}
+                    isSegmenterLoading={isSegmenterLoading}
+                    onModeChange={setBackgroundMode}
+                    onSelectBackground={setSelectedBackgroundId}
+                    onReset={() => setBackgroundMode('original')}
+                  />
+                ) : (
+                  <ARFilterPanel
+                    activeFilters={activeARFilters}
+                    onToggleFilter={handleToggleARFilter}
+                    onClearAllFilters={() => setActiveARFilters([])}
+                    favoriteFilterIds={favoriteARFilters}
+                    onToggleFavorite={handleToggleFavoriteAR}
+                    activeColorTone={activeColorTone}
+                    onSelectColorTone={setActiveColorTone}
+                    trackerStatus={trackerStatus}
+                    trackerError={trackerError}
+                    detectedFaceCount={detectedFaceCount}
+                    onRetryTracker={handleRetryTracker}
+                    litePerformanceMode={litePerformanceMode}
+                    onToggleLiteMode={() => setLitePerformanceMode((v) => !v)}
+                  />
+                )}
+              </div>
 
               {/* CAPTURED SHOTS FILMSTRIP WITH INDIVIDUAL RETAKE / UPLOAD */}
               <div className="captured-filmstrip-card">

@@ -11,6 +11,7 @@ import {
 } from '../types/photobooth';
 import { computeLayoutSlots, getFrameById, getLayoutById } from './constants';
 import { drawFrameOverlay, drawThemePattern, drawThemeSticker } from './themeArt';
+import { applyFilterPostPass, getFilterDefinition } from './filters';
 
 /**
  * Loads an image from a dataURL or URL safely.
@@ -96,8 +97,16 @@ export function getFilterCssAndTint(
       extraFilter = 'contrast(132%) saturate(115%)';
       break;
     case 'original':
-    default:
       break;
+    default: {
+      const def = getFilterDefinition(filter);
+      if (def && def.id !== 'original') {
+        extraFilter = def.cssFilter !== 'none' ? def.cssFilter : '';
+        tintColor = def.tintColor;
+        tintAlpha = def.tintAlpha;
+      }
+      break;
+    }
   }
 
   const cssFilter = `brightness(${b}%) contrast(${c}%) saturate(${s}%) ${extraFilter}`.trim();
@@ -415,6 +424,12 @@ function drawPhotoInSlot(
       ctx.fillRect(slot.x, slot.y, slot.width, slot.height);
       ctx.restore();
     }
+
+    // Apply fine-art post pass (vignette, film grain, halftone, sparkles)
+    ctx.save();
+    ctx.translate(slot.x, slot.y);
+    applyFilterPostPass(ctx, slot.width, slot.height, adjustments.filter);
+    ctx.restore();
   }
 
   ctx.restore();

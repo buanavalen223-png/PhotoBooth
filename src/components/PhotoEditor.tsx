@@ -12,6 +12,7 @@ import {
   STICKER_CATALOG,
 } from '../utils/constants';
 import { THEMES, ThemeId } from '../utils/themes';
+import { getFiltersForTheme, THEME_FILTERS } from '../utils/filters';
 import {
   Sliders,
   Sparkles,
@@ -70,6 +71,9 @@ export const PhotoEditor: React.FC<PhotoEditorProps> = ({
   );
   const visibleStickers = STICKER_CATALOG.filter((i) => visibleStickerTypes.has(i.type));
   const [newTextDraft, setNewTextDraft] = useState('Mochi Memories ✨');
+  const [filterCollection, setFilterCollection] = useState<'theme' | 'all'>('theme');
+  const themeFilters = getFiltersForTheme(themeId);
+  const displayedFilters = filterCollection === 'theme' ? themeFilters : THEME_FILTERS;
 
   const { adjustments, stickers, texts } = editorState;
   const activeSticker = stickers.find((s) => s.id === selectedStickerId) || null;
@@ -245,21 +249,43 @@ export const PhotoEditor: React.FC<PhotoEditorProps> = ({
         </button>
       </div>
 
-      {/* TAB 1: 11 PHOTO FILTERS */}
+      {/* TAB 1: PHOTO FILTERS */}
       {activeTab === 'filters' && (
         <div className="editor-tab-body">
+          <div className="category-scroll-strip" role="tablist" aria-label="Filter collection">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={filterCollection === 'theme'}
+              className={`category-chip ${filterCollection === 'theme' ? 'active' : ''}`}
+              onClick={() => setFilterCollection('theme')}
+            >
+              ✨ {THEMES[themeId].label} Curated ({themeFilters.length})
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={filterCollection === 'all'}
+              className={`category-chip ${filterCollection === 'all' ? 'active' : ''}`}
+              onClick={() => setFilterCollection('all')}
+            >
+              All Filters ({THEME_FILTERS.length})
+            </button>
+          </div>
+
           <p className="editor-helper-text">
-            Pick a K-photobooth filter—applied directly to your final high-res download!
+            Fine-art color grading & effects—applied directly to your final high-res download!
           </p>
+
           <div className="filters-grid">
-            {FILTER_DEFINITIONS.map((f) => {
+            {displayedFilters.map((f) => {
               const isSelected = adjustments.filter === f.id;
               return (
                 <button
                   key={f.id}
                   type="button"
                   className={`filter-pill-btn ${isSelected ? 'active' : ''}`}
-                  onClick={() => handleFilterSelect(f.id)}
+                  onClick={() => handleFilterSelect(f.id as FilterId)}
                   aria-pressed={isSelected}
                 >
                   <span className="filter-emoji">{f.badge}</span>
