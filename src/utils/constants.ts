@@ -325,6 +325,9 @@ export const FRAME_CATEGORIES: FrameCategory[] = [
   'Graduation',
   'Halloween',
   'Holiday',
+  'Comic Action',
+  'Aviation',
+  'Racing',
 ];
 
 export const FRAME_THEMES: FrameTheme[] = [
@@ -568,6 +571,91 @@ export const FRAME_THEMES: FrameTheme[] = [
     badgeIcon: '❄️',
     description: 'Candy-cane pastel stripes and frosty winter wonderland charm.',
   },
+  {
+    id: 'comic-pow-blast',
+    name: 'POW! Comic Blast',
+    category: 'Comic Action',
+    bgColor: '#FFD23F',
+    secondaryBg: '#FFFFFF',
+    patternType: 'halftone',
+    borderColor: '#111111',
+    textColor: '#111111',
+    accentColor: '#E63946',
+    defaultHeaderText: 'POW! MOCHI COMICS',
+    defaultFooterText: 'To be continued...',
+    badgeIcon: '💥',
+    description: 'Yellow halftone print, ink-black panel borders and a red action burst.',
+    overlay: 'comic-burst',
+    headerFont: '900 30px "Arial Black", Impact, sans-serif',
+  },
+  {
+    id: 'comic-midnight-hero',
+    name: 'Midnight Hero Issue',
+    category: 'Comic Action',
+    bgColor: '#1B2A4A',
+    secondaryBg: '#0B1220',
+    patternType: 'action-lines',
+    borderColor: '#F1F5F9',
+    textColor: '#F8FAFC',
+    accentColor: '#38BDF8',
+    defaultHeaderText: 'ISSUE #01 - THE CREW',
+    defaultFooterText: 'Heroes never clock out',
+    badgeIcon: '⚡',
+    description: 'Navy speed lines radiating behind white panels, steel-blue highlights.',
+    overlay: 'comic-burst',
+    headerFont: '900 28px "Arial Black", Impact, sans-serif',
+  },
+  {
+    id: 'aviation-blue-skies',
+    name: 'Blue Skies Flight Deck',
+    category: 'Aviation',
+    bgColor: '#7EC8F2',
+    secondaryBg: '#EAF6FF',
+    patternType: 'sky-clouds',
+    borderColor: '#FFFFFF',
+    textColor: '#0F2A44',
+    accentColor: '#F59E0B',
+    defaultHeaderText: 'MOCHI AIR - FLIGHT MC01',
+    defaultFooterText: 'Cleared for takeoff',
+    badgeIcon: '✈️',
+    description: 'Daylight sky gradient with drifting clouds and a captain flight badge.',
+    overlay: 'aviation-badge',
+    headerFont: '800 26px "Arial", "Liberation Sans", sans-serif',
+  },
+  {
+    id: 'aviation-night-cockpit',
+    name: 'Night Cockpit',
+    category: 'Aviation',
+    bgColor: '#101827',
+    secondaryBg: '#1E2B40',
+    patternType: 'grid',
+    borderColor: '#94A3B8',
+    textColor: '#E2E8F0',
+    accentColor: '#22C55E',
+    defaultHeaderText: 'ALT 35000 FT  |  HDG 090',
+    defaultFooterText: 'Autopilot engaged',
+    badgeIcon: '🛩️',
+    description: 'Charcoal instrument-panel grid with green HUD accents and pilot wings.',
+    overlay: 'aviation-badge',
+    headerFont: '700 24px "Courier New", monospace',
+  },
+  {
+    id: 'racing-checkered',
+    name: 'Pit Lane Checkered',
+    category: 'Racing',
+    bgColor: '#202124',
+    secondaryBg: '#3C4043',
+    patternType: 'checker',
+    borderColor: '#F8FAFC',
+    textColor: '#F8FAFC',
+    accentColor: '#EF4444',
+    defaultHeaderText: 'MOCHI GRAND PRIX',
+    defaultFooterText: 'Lights out and away we go',
+    badgeIcon: '🏁',
+    description: 'Charcoal checkered flag edges with red racing stripes.',
+    overlay: 'racing-flags',
+    headerFont: '900 italic 28px "Arial Black", Impact, sans-serif',
+  },
 ];
 
 export function getFrameById(id: string): FrameTheme {
@@ -600,7 +688,7 @@ export const FILTER_DEFINITIONS: FilterDefinition[] = [
 export interface StickerCatalogItem {
   type: StickerType;
   label: string;
-  category: 'Hearts & Stars' | 'Flowers & Bows' | 'Cute & Doodles';
+  category: 'Hearts & Stars' | 'Flowers & Bows' | 'Cute & Doodles' | 'Comic & Action' | 'Aviation & Racing';
   emojiPreview: string;
 }
 
@@ -621,6 +709,14 @@ export const STICKER_CATALOG: StickerCatalogItem[] = [
   { type: 'doodle-crown', label: 'Princess Crown', category: 'Cute & Doodles', emojiPreview: '👑' },
   { type: 'doodle-cloud', label: 'Fluffy Cloud', category: 'Cute & Doodles', emojiPreview: '☁️' },
   { type: 'doodle-music', label: 'Melody Note', category: 'Cute & Doodles', emojiPreview: '🎵' },
+  { type: 'comic-pow', label: 'POW! Burst', category: 'Comic & Action', emojiPreview: '💥' },
+  { type: 'comic-boom', label: 'BOOM! Burst', category: 'Comic & Action', emojiPreview: '💢' },
+  { type: 'speech-bubble', label: 'Speech Bubble', category: 'Comic & Action', emojiPreview: '💬' },
+  { type: 'lightning-bolt', label: 'Lightning Bolt', category: 'Comic & Action', emojiPreview: '⚡' },
+  { type: 'airplane', label: 'Jet Plane', category: 'Aviation & Racing', emojiPreview: '✈️' },
+  { type: 'pilot-wings', label: 'Pilot Wings', category: 'Aviation & Racing', emojiPreview: '🪽' },
+  { type: 'flight-badge', label: 'Flight Badge', category: 'Aviation & Racing', emojiPreview: '🎖️' },
+  { type: 'checkered-flag', label: 'Checkered Flag', category: 'Aviation & Racing', emojiPreview: '🏁' },
 ];
 
 export const CAMERA_RESOLUTIONS: CameraResolutionOption[] = [

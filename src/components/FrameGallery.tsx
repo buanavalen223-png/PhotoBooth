@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { FrameCategory, FrameTheme } from '../types/photobooth';
+import { FrameTheme } from '../types/photobooth';
+import { THEMES, ThemeId } from '../utils/themes';
 import { FRAME_CATEGORIES, FRAME_THEMES } from '../utils/constants';
 import { Search, Check, Sparkles, Camera, X } from 'lucide-react';
 
@@ -8,6 +9,8 @@ interface FrameGalleryProps {
   onSelectFrame: (frameId: string) => void;
   onUseInStudio?: (frameId: string) => void;
   compactMode?: boolean;
+  /** When set, frames are limited to and grouped by the active theme's preset collections. */
+  themeId?: ThemeId;
 }
 
 export const FrameGallery: React.FC<FrameGalleryProps> = ({
@@ -15,13 +18,24 @@ export const FrameGallery: React.FC<FrameGalleryProps> = ({
   onSelectFrame,
   onUseInStudio,
   compactMode = false,
+  themeId,
 }) => {
-  const [activeCategory, setActiveCategory] = useState<FrameCategory>('All');
+  const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredFrames = useMemo(() => {
+    const collections = themeId ? THEMES[themeId].collections : null;
+    const allowed = collections
+      ? new Set(
+          collections
+            .filter((c) => activeCategory === 'All' || c.label === activeCategory)
+            .flatMap((c) => c.frameIds)
+        )
+      : null;
     return FRAME_THEMES.filter((frame) => {
-      const matchesCategory = activeCategory === 'All' || frame.category === activeCategory;
+      const matchesCategory = allowed
+        ? allowed.has(frame.id)
+        : activeCategory === 'All' || frame.category === activeCategory;
       const q = searchQuery.trim().toLowerCase();
       const matchesSearch =
         !q ||
@@ -30,7 +44,13 @@ export const FrameGallery: React.FC<FrameGalleryProps> = ({
         frame.description.toLowerCase().includes(q);
       return matchesCategory && matchesSearch;
     });
-  }, [activeCategory, searchQuery]);
+  }, [activeCategory, searchQuery, themeId]);
+
+  const categories: string[] = themeId
+    ? ['All', ...THEMES[themeId].collections.map((c) => c.label)]
+    : FRAME_CATEGORIES;
+
+  React.useEffect(() => setActiveCategory('All'), [themeId]);
 
   return (
     <div className={`frame-gallery-wrapper ${compactMode ? 'compact' : 'full-page'}`}>
@@ -72,7 +92,7 @@ export const FrameGallery: React.FC<FrameGalleryProps> = ({
         </div>
 
         <div className="category-scroll-strip" role="tablist" aria-label="Frame categories">
-          {FRAME_CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat}
               type="button"

@@ -1,3 +1,4 @@
+import { THEMES, ThemeId, themeFrameIds } from '../utils/themes';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ARFilterId,
@@ -52,6 +53,7 @@ import {
 
 interface PhotoboothStudioProps {
   initialFrameId?: string | null;
+  themeId: ThemeId;
   onGalleryUpdated: () => void;
 }
 
@@ -62,6 +64,7 @@ const FAV_FILTERS_STORAGE_KEY = 'mochi_booth_fav_ar_filters_v1';
 export const PhotoboothStudio: React.FC<PhotoboothStudioProps> = ({
   initialFrameId,
   onGalleryUpdated,
+  themeId,
 }) => {
   const { showToast } = useToast();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -114,7 +117,7 @@ export const PhotoboothStudio: React.FC<PhotoboothStudioProps> = ({
     texts: [],
     customization: {
       ...DEFAULT_CUSTOMIZATION,
-      frameId: initialFrameId || DEFAULT_CUSTOMIZATION.frameId,
+      frameId: initialFrameId || THEMES[themeId].defaultFrameId,
     },
   }));
 
@@ -134,6 +137,24 @@ export const PhotoboothStudio: React.FC<PhotoboothStudioProps> = ({
       }));
     }
   }, [initialFrameId]);
+
+  // Switching theme swaps the available preset collections. If the current frame is not part of
+  // the new theme, move to the theme's default frame. Captured photos, stickers and text are kept.
+  useEffect(() => {
+    setEditorState((prev) => {
+      if (themeFrameIds(themeId).includes(prev.customization.frameId)) return prev;
+      const frame = getFrameById(THEMES[themeId].defaultFrameId);
+      return {
+        ...prev,
+        customization: {
+          ...prev.customization,
+          frameId: frame.id,
+          customBgColor: null,
+          customFooterCaption: frame.defaultFooterText,
+        },
+      };
+    });
+  }, [themeId]);
 
   const currentLayout = getLayoutById(editorState.customization.layoutId);
   const requiredPhotoCount: PhotoCountMode = currentLayout.photoCount;
@@ -491,7 +512,11 @@ export const PhotoboothStudio: React.FC<PhotoboothStudioProps> = ({
           adjustments: { ...DEFAULT_ADJUSTMENTS },
           stickers: [],
           texts: [],
-          customization: { ...DEFAULT_CUSTOMIZATION },
+          customization: {
+            ...DEFAULT_CUSTOMIZATION,
+            frameId: THEMES[themeId].defaultFrameId,
+            customFooterCaption: getFrameById(THEMES[themeId].defaultFrameId).defaultFooterText,
+          },
         });
         setHistoryPast([]);
         setHistoryFuture([]);
@@ -1205,7 +1230,11 @@ export const PhotoboothStudio: React.FC<PhotoboothStudioProps> = ({
                     onClick={() =>
                       updateEditorState((prev) => ({
                         ...prev,
-                        customization: { ...DEFAULT_CUSTOMIZATION },
+                        customization: {
+            ...DEFAULT_CUSTOMIZATION,
+            frameId: THEMES[themeId].defaultFrameId,
+            customFooterCaption: getFrameById(THEMES[themeId].defaultFrameId).defaultFooterText,
+          },
                       }))
                     }
                   >
@@ -1217,9 +1246,10 @@ export const PhotoboothStudio: React.FC<PhotoboothStudioProps> = ({
 
               {/* 16 CUTE FRAMES PICKER */}
               <div className="customization-section">
-                <h4>3. Select Frame Design (16 Themes)</h4>
+                <h4>3. Select Frame Design ({THEMES[themeId].label} collection)</h4>
                 <FrameGallery
                   compactMode
+                  themeId={themeId}
                   selectedFrameId={editorState.customization.frameId}
                   onSelectFrame={(fId) => {
                     const f = getFrameById(fId);
@@ -1254,6 +1284,7 @@ export const PhotoboothStudio: React.FC<PhotoboothStudioProps> = ({
               </div>
 
               <PhotoEditor
+                themeId={themeId}
                 editorState={editorState}
                 onUpdateState={updateEditorState}
                 selectedStickerId={selectedStickerId}

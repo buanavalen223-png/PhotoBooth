@@ -1,18 +1,43 @@
 import React, { useState } from 'react';
 import { PageRoute } from '../types/photobooth';
+import { THEMES, THEME_ORDER, ThemeId } from '../utils/themes';
+import { THEME_ICONS } from './ThemeIcons';
 import { Camera, Sparkles, Image as ImageIcon, Frame, Heart, Menu, X } from 'lucide-react';
 
 interface NavbarProps {
   currentPage: PageRoute;
   onNavigate: (page: PageRoute) => void;
   galleryCount: number;
+  themeId: ThemeId;
+  onChangeTheme: (id: ThemeId) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentPage,
   onNavigate,
   galleryCount,
+  themeId,
+  onChangeTheme,
 }) => {
+  const themeSwitch = (
+    <div className="theme-switch" role="group" aria-label="Booth style">
+      {THEME_ORDER.map((id) => {
+        const Icon = THEME_ICONS[id];
+        return (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={themeId === id}
+            title={`${THEMES[id].label}: ${THEMES[id].tagline}`}
+            onClick={() => onChangeTheme(id)}
+          >
+            <Icon />
+            <span>{THEMES[id].label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleNav = (page: PageRoute) => {
@@ -83,6 +108,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         <div className="nav-cta-wrap">
+          {themeSwitch}
           <button
             type="button"
             className="btn btn-primary btn-cta-nav"
@@ -106,6 +132,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {mobileMenuOpen && (
         <div className="mobile-nav-drawer">
+          <div className="mobile-theme-switch">{themeSwitch}</div>
           <button
             type="button"
             className={`mobile-nav-item ${currentPage === 'home' ? 'active' : ''}`}

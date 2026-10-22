@@ -55,7 +55,12 @@ export type FrameCategory =
   | 'Couple Memories'
   | 'Graduation'
   | 'Halloween'
-  | 'Holiday';
+  | 'Holiday'
+  | 'Comic Action'
+  | 'Aviation'
+  | 'Racing';
+
+export type FrameOverlay = 'comic-burst' | 'aviation-badge' | 'racing-flags';
 
 export interface FrameTheme {
   id: string;
@@ -73,7 +78,15 @@ export interface FrameTheme {
     | 'stars'
     | 'hearts'
     | 'flowers'
-    | 'ribbons';
+    | 'ribbons'
+    | 'halftone'
+    | 'action-lines'
+    | 'sky-clouds'
+    | 'checker';
+  /** Optional decorative overlay drawn on top of photos (theme presets). */
+  overlay?: FrameOverlay;
+  /** Optional header font override for themed frames. */
+  headerFont?: string;
   borderColor: string;
   textColor: string;
   accentColor: string;
@@ -282,7 +295,15 @@ export type StickerType =
   | 'bunny-ears'
   | 'doodle-crown'
   | 'doodle-cloud'
-  | 'doodle-music';
+  | 'doodle-music'
+  | 'comic-pow'
+  | 'comic-boom'
+  | 'speech-bubble'
+  | 'lightning-bolt'
+  | 'airplane'
+  | 'pilot-wings'
+  | 'flight-badge'
+  | 'checkered-flag';
 
 export interface StickerItem {
   id: string;

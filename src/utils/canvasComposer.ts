@@ -10,6 +10,7 @@ import {
   TextOverlayItem,
 } from '../types/photobooth';
 import { computeLayoutSlots, getFrameById, getLayoutById } from './constants';
+import { drawFrameOverlay, drawThemePattern, drawThemeSticker } from './themeArt';
 
 /**
  * Loads an image from a dataURL or URL safely.
@@ -154,6 +155,10 @@ function drawFrameBackgroundAndPattern(
   ctx.fillRect(0, 0, width, height);
 
   ctx.save();
+  if (drawThemePattern(ctx, width, height, frame)) {
+    ctx.restore();
+    return;
+  }
   switch (frame.patternType) {
     case 'dots': {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
@@ -450,6 +455,11 @@ export function drawVectorSticker(
   ctx.shadowColor = 'rgba(57, 51, 67, 0.22)';
   ctx.shadowBlur = 10;
   ctx.shadowOffsetY = 3;
+
+  if (drawThemeSticker(ctx, type)) {
+    ctx.restore();
+    return;
+  }
 
   switch (type) {
     case 'heart-pink':
@@ -820,7 +830,7 @@ export async function renderPhotoboothCanvas(
   // 2. Top header brand text
   ctx.save();
   ctx.fillStyle = frame.textColor;
-  ctx.font = '800 24px "Fredoka", "Quicksand", Nunito, sans-serif';
+  ctx.font = frame.headerFont || '800 24px "Fredoka", "Quicksand", Nunito, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(frame.defaultHeaderText, baseW / 2, layout.defaultPadding + 28);
@@ -857,6 +867,11 @@ export async function renderPhotoboothCanvas(
       customization.borderRadius
     );
   });
+
+  // 3b. Theme overlay decoration (comic burst, flight badge, racing flag)
+  if (!customization.transparentBg) {
+    drawFrameOverlay(ctx, baseW, baseH, frame, layout.bottomFooterHeight);
+  }
 
   // 4. Footer caption & optional date stamp
   const footerCenterY = baseH - layout.bottomFooterHeight / 2;

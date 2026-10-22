@@ -32,12 +32,12 @@ class FaceTrackerService {
     this.initPromise = (async () => {
       try {
         // First try loading local self-hosted WASM and model from /mediapipe
-        const vision = await FilesetResolver.forVisionTasks('/mediapipe');
+        const vision = await FilesetResolver.forVisionTasks(`${import.meta.env.BASE_URL}mediapipe`);
 
         try {
           this.landmarker = await FaceLandmarker.createFromOptions(vision, {
             baseOptions: {
-              modelAssetPath: '/mediapipe/face_landmarker.task',
+              modelAssetPath: `${import.meta.env.BASE_URL}mediapipe/face_landmarker.task`,
               delegate: 'GPU',
             },
             runningMode: 'VIDEO',
@@ -50,7 +50,7 @@ class FaceTrackerService {
           // Fallback to CPU delegate if WebGL/GPU delegate is restricted
           this.landmarker = await FaceLandmarker.createFromOptions(vision, {
             baseOptions: {
-              modelAssetPath: '/mediapipe/face_landmarker.task',
+              modelAssetPath: `${import.meta.env.BASE_URL}mediapipe/face_landmarker.task`,
               delegate: 'CPU',
             },
             runningMode: 'VIDEO',

@@ -11,6 +11,7 @@ import {
   QUICK_TEXT_PRESETS,
   STICKER_CATALOG,
 } from '../utils/constants';
+import { THEMES, ThemeId } from '../utils/themes';
 import {
   Sliders,
   Sparkles,
@@ -39,6 +40,7 @@ interface PhotoEditorProps {
   onUndo: () => void;
   onRedo: () => void;
   onResetEditor: () => void;
+  themeId: ThemeId;
 }
 
 type EditorTab = 'filters' | 'adjust' | 'stickers' | 'text';
@@ -55,8 +57,18 @@ export const PhotoEditor: React.FC<PhotoEditorProps> = ({
   onUndo,
   onRedo,
   onResetEditor,
+  themeId,
 }) => {
   const [activeTab, setActiveTab] = useState<EditorTab>('filters');
+  const [stickerCollection, setStickerCollection] = useState<string>('all');
+  const themeCollections = THEMES[themeId].collections;
+  React.useEffect(() => setStickerCollection('all'), [themeId]);
+  const visibleStickerTypes = new Set(
+    themeCollections
+      .filter((c) => stickerCollection === 'all' || c.id === stickerCollection)
+      .flatMap((c) => c.stickers)
+  );
+  const visibleStickers = STICKER_CATALOG.filter((i) => visibleStickerTypes.has(i.type));
   const [newTextDraft, setNewTextDraft] = useState('Mochi Memories ✨');
 
   const { adjustments, stickers, texts } = editorState;
@@ -444,8 +456,23 @@ export const PhotoEditor: React.FC<PhotoEditorProps> = ({
             preview canvas or fine-tune below.
           </p>
 
+          <div className="category-scroll-strip" role="tablist" aria-label="Sticker collections">
+            {[{ id: 'all', label: 'All' }, ...themeCollections].map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                role="tab"
+                aria-selected={stickerCollection === c.id}
+                className={`category-chip ${stickerCollection === c.id ? 'active' : ''}`}
+                onClick={() => setStickerCollection(c.id)}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+
           <div className="sticker-catalog-grid">
-            {STICKER_CATALOG.map((item) => (
+            {visibleStickers.map((item) => (
               <button
                 key={item.type}
                 type="button"
